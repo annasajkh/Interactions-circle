@@ -1,19 +1,21 @@
 import tweepy
 import math
-from PIL import Image, ImageDraw
+from PIL import Image
 import urllib.request
 import random
 import glob
 import os
-import time
+import keys
+import math
 
-auth = tweepy.OAuthHandler("-", "-")
-auth.set_access_token("-", "-")
+auth = tweepy.OAuthHandler(os.environ["CONSUMER_KEY"], os.environ["CONSUMER_SECRET"])
+auth.set_access_token(os.environ["ACCESS_TOKEN"],os.environ["ACCESS_TOKEN_SECRET"])
+
 api = tweepy.API(auth)
 
-max_tweets_check_limit = 3200
-min_score = 20
-target_username = "annasVirtual".lower()
+max_tweets_check_limit = 3000
+min_score = 10
+target_username = "tdxf20".lower()
 interacted_users = {}
 user_profil_url = {}
 count = 0
@@ -29,32 +31,44 @@ def update_interacted_users(username, value, profil_url):
 
 
 for status in tweepy.Cursor(api.user_timeline,screen_name=target_username,tweet_mode="extended").items():
-    if not status.entities["user_mentions"]:
-        continue
 
     tweettext = str(status.full_text.lower().encode("ascii",errors="ignore"))
 
+
     if "rt @" in tweettext:
         retweet_username = tweettext.split(":")[0].split("@")[1]
+
         update_interacted_users(retweet_username, 3,None)
+        print(f"{retweet_username} gets 3 score")
+
         continue
 
+    if not status.entities["user_mentions"]:
+        continue
     
     for user in status.entities["user_mentions"]:
-        update_interacted_users(user["screen_name"], 2,None)
+        name = user["screen_name"]
+
+        print(f"{name} gets 2 score")
+        update_interacted_users(name ,2,None)
 
     if count == max_tweets_check_limit:
         break
 
     count += 1
 
-for status in tweepy.Cursor(api.favorites,screen_name=target_username).items():
-    update_interacted_users(status.user.screen_name.lower(), 1, status.user.profile_image_url)
+try:
+    for status in tweepy.Cursor(api.favorites,screen_name=target_username).items():
+        print(f"{status.user.screen_name.lower()} gets 1 score")
 
-    if count == max_tweets_check_limit:
-        break
+        update_interacted_users(status.user.screen_name.lower(), 1, status.user.profile_image_url)
 
-    count += 1
+        if count == max_tweets_check_limit:
+            break
+
+        count += 1
+except:
+    pass
 
 
 interacted_users = {k:v for k,v in interacted_users.items() if v >= min_score and k != target_username}
@@ -86,23 +100,25 @@ full_circle = math.pi * 2
 
 max_score = max(list(interacted_users.values()))
 
+def map(old_value,old_min, old_max, new_min, new_max):
+    return (((old_value - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
+
 
 for name, score in interacted_users.items():
     try:
-        random_angle = random.uniform(0,full_circle)
+        random_angle = random.random() * full_circle
 
-        x = math.cos(random_angle) 
-        y = math.sin(random_angle) 
+        length = 1 - score / max_score
+        length = map(length, 0, 1, img_w, bg_w / 2 - img_w / 2)
 
-        x *= (1 - score / max_score) * (bg_w / 2 - img_w / 2)
-        y *= (1 - score / max_score) * (bg_h / 2 - img_h / 2)
-        
-        x += bg_w / 2 - img_w / 2
-        y += bg_h / 2 - img_w / 2
+        x = math.cos(random_angle) * length
+        y = math.sin(random_angle) * length
 
-        if score == max_score:
-            x += img_w
-            y += img_w 
+        x += bg_w / 2
+        y += bg_h / 2
+
+        print(x)
+        print(y)
         
         bg.paste(Image.open(f"{name}.png"),(int(x),int(y)))
 
