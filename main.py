@@ -5,7 +5,6 @@ import urllib.request
 import random
 import glob
 import os
-import keys
 import math
 
 auth = tweepy.OAuthHandler(os.environ["CONSUMER_KEY"], os.environ["CONSUMER_SECRET"])
