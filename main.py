@@ -28,33 +28,35 @@ def update_interacted_users(username, value, profil_url):
         interacted_users[username] = value
         user_profil_url[username] = profil_url
 
+try:
+    for status in tweepy.Cursor(api.user_timeline,screen_name=target_username,tweet_mode="extended").items():
 
-for status in tweepy.Cursor(api.user_timeline,screen_name=target_username,tweet_mode="extended").items():
-
-    tweettext = str(status.full_text.lower().encode("ascii",errors="ignore"))
+        tweettext = str(status.full_text.lower().encode("ascii",errors="ignore"))
 
 
-    if "rt @" in tweettext:
-        retweet_username = tweettext.split(":")[0].split("@")[1]
+        if "rt @" in tweettext:
+            retweet_username = tweettext.split(":")[0].split("@")[1]
 
-        update_interacted_users(retweet_username, 3,None)
-        print(f"{retweet_username} gets 3 score")
+            update_interacted_users(retweet_username, 3,None)
+            print(f"{retweet_username} gets 3 score")
 
-        continue
+            continue
 
-    if not status.entities["user_mentions"]:
-        continue
-    
-    for user in status.entities["user_mentions"]:
-        name = user["screen_name"]
+        if not status.entities["user_mentions"]:
+            continue
 
-        print(f"{name} gets 2 score")
-        update_interacted_users(name ,2,None)
+        for user in status.entities["user_mentions"]:
+            name = user["screen_name"]
 
-    if count == max_tweets_check_limit:
-        break
+            print(f"{name} gets 2 score")
+            update_interacted_users(name ,2,None)
 
-    count += 1
+        if count == max_tweets_check_limit:
+            break
+
+        count += 1
+except:
+    pass
 
 try:
     for status in tweepy.Cursor(api.favorites,screen_name=target_username).items():
